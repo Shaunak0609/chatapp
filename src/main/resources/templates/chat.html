@@ -1,0 +1,36 @@
+<h2>Welcome, <span th:text="${username}"></span>!</h2>
+
+<div id="chatBox" style="border:1px solid #000; height:300px; overflow:auto;"></div>
+
+<input type="text" id="messageInput" placeholder="Type a message"/>
+<button onclick="sendMessage()">Send</button>
+
+<!-- Hidden span to pass username to JS -->
+<span id="usernameHolder" th:text="${username}" style="display:none"></span>
+
+<!-- Logout button -->
+<form action="/logout" method="get">
+    <button type="submit">Logout</button>
+</form>
+
+<script>
+    const username = document.getElementById('usernameHolder').innerText;
+
+    const ws = new WebSocket("ws://" + window.location.host + "/chat");
+
+    ws.onmessage = function(event) {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML += event.data + "<br/>";
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    function sendMessage() {
+        const input = document.getElementById("messageInput");
+
+        // ✅ SEND ONLY THE MESSAGE TEXT
+        ws.send(input.value);
+
+        input.value = "";
+    }
+</script>
+

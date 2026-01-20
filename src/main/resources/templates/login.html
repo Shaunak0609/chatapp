@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="POST" action="/login">
+        <input type="text" name="username" placeholder="Enter username"/>
+        <button type="submit">Login</button>
+    </form>
+    <p style="color:red;">
+        <!-- Error message -->
+        <span th:text="${error}"></span>
+    </p>
+</body>
+</html>
