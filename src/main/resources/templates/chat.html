@@ -50,8 +50,7 @@
         const input = document.getElementById("messageInput");
         if (!input.value.trim()) return;
 
-        const msg = username + ": " + input.value;
-        ws.send(msg);
+        ws.send(input.value);
         input.value = "";
     }
 </script>
