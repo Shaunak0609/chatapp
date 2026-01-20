@@ -14,23 +14,30 @@
 </form>
 
 <script>
-    const username = document.getElementById('usernameHolder').innerText;
+  const username = document.getElementById("usernameHolder").innerText;
 
-    const ws = new WebSocket("ws://" + window.location.host + "/chat");
+  const ws = new WebSocket(
+    (location.protocol === "https:" ? "wss://" : "ws://") +
+    location.host +
+    "/chat"
+  );
 
-    ws.onmessage = function(event) {
-        const chatBox = document.getElementById("chatBox");
-        chatBox.innerHTML += event.data + "<br/>";
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
+  ws.onopen = () => console.log("WebSocket connected");
+  ws.onerror = (e) => console.error("WebSocket error", e);
 
-    function sendMessage() {
-        const input = document.getElementById("messageInput");
+  ws.onmessage = function (event) {
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML += event.data + "<br/>";
+    chatBox.scrollTop = chatBox.scrollHeight;
+  };
 
-        // ✅ SEND ONLY THE MESSAGE TEXT
-        ws.send(input.value);
+  function sendMessage() {
+    const input = document.getElementById("messageInput");
+    if (!input.value.trim()) return;
 
-        input.value = "";
-    }
+    ws.send(input.value);
+    input.value = "";
+  }
 </script>
+
 
