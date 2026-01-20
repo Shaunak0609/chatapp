@@ -14,30 +14,47 @@
 </form>
 
 <script>
-  const username = document.getElementById("usernameHolder").innerText;
+    const username = document.getElementById("usernameHolder").innerText;
 
-  const ws = new WebSocket(
-    (location.protocol === "https:" ? "wss://" : "ws://") +
-    location.host +
-    "/chat"
-  );
+    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const wsUrl = wsProtocol + window.location.host + "/chat";
 
-  ws.onopen = () => console.log("WebSocket connected");
-  ws.onerror = (e) => console.error("WebSocket error", e);
+    let ws = null;
 
-  ws.onmessage = function (event) {
-    const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML += event.data + "<br/>";
-    chatBox.scrollTop = chatBox.scrollHeight;
-  };
+    function connectWebSocket() {
+        ws = new WebSocket(wsUrl);
 
-  function sendMessage() {
-    const input = document.getElementById("messageInput");
-    if (!input.value.trim()) return;
+        ws.onopen = () => {
+            console.log("WebSocket connected");
+        };
 
-    ws.send(input.value);
-    input.value = "";
-  }
+        ws.onerror = (e) => {
+            console.error("WebSocket error:", e);
+        };
+
+        ws.onmessage = (event) => {
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML += event.data + "<br/>";
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+    }
+
+    connectWebSocket();
+
+    function sendMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.error("WebSocket not ready");
+            return;
+        }
+
+        const input = document.getElementById("messageInput");
+        if (!input.value.trim()) return;
+
+        const msg = username + ": " + input.value;
+        ws.send(msg);
+        input.value = "";
+    }
 </script>
+
 
 
