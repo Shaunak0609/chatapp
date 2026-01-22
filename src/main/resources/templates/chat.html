@@ -1,17 +1,41 @@
-<h2>Welcome, <span th:text="${username}"></span>!</h2>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>SheepChat</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
 
-<div id="chatBox" style="border:1px solid #000; height:300px; overflow:auto;"></div>
+<div class="chat-container">
 
-<input type="text" id="messageInput" placeholder="Type a message"/>
-<button onclick="sendMessage()">Send</button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>🐑 SheepChat</h2>
+        <p th:text="'Logged in as: ' + ${username}"></p>
 
-<!-- Hidden span to pass username to JS -->
+        <form action="/logout" method="get">
+            <button style="margin-top:10px;">Logout</button>
+        </form>
+    </div>
+
+    <!-- Main Chat -->
+    <div class="chat-main">
+
+        <div class="chat-header">
+            # general
+        </div>
+
+        <div id="chatBox" class="chat-box"></div>
+
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Message #general" />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden username -->
 <span id="usernameHolder" th:text="${username}" style="display:none"></span>
-
-<!-- Logout button -->
-<form action="/logout" method="get">
-    <button type="submit">Logout</button>
-</form>
 
 <script>
     const username = document.getElementById("usernameHolder").innerText;
@@ -19,33 +43,16 @@
     const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
     const wsUrl = wsProtocol + window.location.host + "/chat";
 
-    let ws = null;
+    let ws = new WebSocket(wsUrl);
 
-    function connectWebSocket() {
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("WebSocket connected");
-        };
-
-        ws.onerror = (e) => {
-            console.error("WebSocket error:", e);
-        };
-
-        ws.onmessage = (event) => {
-            const chatBox = document.getElementById("chatBox");
-            chatBox.innerHTML += event.data + "<br/>";
-            chatBox.scrollTop = chatBox.scrollHeight;
-        };
-    }
-
-    connectWebSocket();
+    ws.onmessage = (event) => {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML += `<div class="message">${event.data}</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
 
     function sendMessage() {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            console.error("WebSocket not ready");
-            return;
-        }
+        if (ws.readyState !== WebSocket.OPEN) return;
 
         const input = document.getElementById("messageInput");
         if (!input.value.trim()) return;
@@ -55,5 +62,5 @@
     }
 </script>
 
-
-
+</body>
+</html>

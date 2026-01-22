@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Login</title>
+    <title>SheepChat | Login</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h2>Login</h2>
-    <form method="POST" action="/login">
-        <input type="text" name="username" placeholder="Enter username"/>
-        <button type="submit">Login</button>
-    </form>
-    <p style="color:red;">
-        <!-- Error message -->
-        <span th:text="${error}"></span>
-    </p>
+
+<div class="login-container">
+    <div class="login-card">
+        <h1>🐑 SheepChat</h1>
+
+        <form action="/login" method="post">
+            <input type="text" name="username" placeholder="Enter username" required />
+            <button type="submit">Enter Chat</button>
+        </form>
+
+        <p th:if="${error}" style="color:red;" th:text="${error}"></p>
+    </div>
+</div>
+
 </body>
 </html>
