@@ -1,10 +1,10 @@
 package com.example.chatapp;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -12,11 +12,11 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final Set<WebSocketSession> sessions = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<WebSocketSession> sessions =
+            new CopyOnWriteArraySet<>();
+
     private final MessageRepository messageRepository;
 
-
-    @Autowired
     public ChatWebSocketHandler(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
@@ -24,19 +24,38 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
+
+        // 🔹 Send message history ONLY to this user
+        List<Message> history = messageRepository.findLatest25Messages();
+        Collections.reverse(history); // oldest → newest
+
+        for (Message msg : history) {
+            session.sendMessage(
+                new TextMessage(msg.getUsername() + ": " + msg.getContent())
+            );
+        }
     }
 
     @Override
-    public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message)
+            throws Exception {
+
         String username = (String) session.getAttributes().get("username");
+        if (username == null) username = "Guest";
+
         String content = message.getPayload();
 
+        // Save to DB
         Message msg = new Message(username, content);
-
         messageRepository.save(msg);
 
+        String formatted = username + ": " + content;
+
+        // Broadcast to everyone
         for (WebSocketSession s : sessions) {
-            s.sendMessage(new TextMessage(username + ": " + content));
+            if (s.isOpen()) {
+                s.sendMessage(new TextMessage(formatted));
+            }
         }
     }
 
