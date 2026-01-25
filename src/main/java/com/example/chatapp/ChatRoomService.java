@@ -32,3 +32,4 @@ public class ChatRoomService {
         messageRepository.deleteByRoom(room);
         chatRoomRepository.deleteByName(room);
     }
+}
