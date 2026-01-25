@@ -11,6 +11,12 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 public class LoginController {
 
+    private final ChatRoomRepository chatRoomRepository;
+
+    public LoginController(ChatRoomRepository chatRoomRepository) {
+        this.chatRoomRepository = chatRoomRepository;
+    }
+
     @GetMapping("/login")
     public ModelAndView showLogin() {
         return new ModelAndView("login");
@@ -29,16 +35,23 @@ public class LoginController {
     }
 
     @GetMapping("/chat")
-    public ModelAndView chat(@RequestParam(defaultValue = "general") String room,
-                             HttpSession session) {
+    public ModelAndView chat(
+            @RequestParam(defaultValue = "general") String room,
+            HttpSession session
+    ) {
         String username = (String) session.getAttribute("username");
-        if (username == null) return new ModelAndView("redirect:/login");
+        if (username == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        chatRoomRepository.findByName(room)
+                .orElseGet(() -> chatRoomRepository.save(new ChatRoom(room)));
 
         ModelAndView mv = new ModelAndView("chat");
         mv.addObject("username", username);
         mv.addObject("room", room);
         return mv;
     }
+
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
