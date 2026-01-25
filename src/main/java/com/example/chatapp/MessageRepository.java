@@ -14,4 +14,5 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         LIMIT 50
     """, nativeQuery = true)
     List<Message> findLast50MessagesByRoom(String room);
+    void deleteByRoom(String room);
 }

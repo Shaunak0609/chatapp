@@ -56,4 +56,13 @@ public class LoginController {
         session.invalidate();
         return "redirect:/login";
     }
+
+    @PostMapping("/rooms/delete")
+    public String deleteRoom(@RequestParam String room) {
+        if (!room.equals("general")) {
+            chatRoomService.deleteRoom(room);
+        }
+        return "redirect:/chat";
+    }
+
 }

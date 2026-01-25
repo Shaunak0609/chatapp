@@ -17,6 +17,14 @@
             <li th:each="r : ${rooms}">
                 <a th:href="@{/chat(room=${r.name})}"
                    th:text="'# ' + ${r.name}"></a>
+
+                <form th:if="${r.name != 'general'}"
+                    action="/rooms/delete"
+                    method="post"
+                    style="display:inline">
+                    <input type="hidden" name="room" th:value="${r.name}">
+                    <button type="submit">🗑</button>
+                </form>
             </li>
         </ul>
 
