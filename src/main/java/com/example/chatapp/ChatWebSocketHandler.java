@@ -49,7 +49,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (username == null) username = "Anonymous";
 
         String content = message.getPayload();
-        System.out.println("Received message: " + content);
+        System.out.println("Saving message: " + username + ": " + content);
 
         Message msg = new Message(username, content, room);
         messageService.saveMessage(msg);

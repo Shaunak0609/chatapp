@@ -15,7 +15,7 @@ public class UserHandshakeInterceptor implements HandshakeInterceptor {
                                    WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) {
 
-        String query = request.getURI().getQuery(); // room=...&username=...
+        String query = request.getURI().getQuery(); // e.g., room=general&username=John
         if (query != null) {
             for (String param : query.split("&")) {
                 String[] kv = param.split("=");
@@ -25,6 +25,11 @@ public class UserHandshakeInterceptor implements HandshakeInterceptor {
                 }
             }
         }
+
+        // Fallback defaults
+        if (!attributes.containsKey("username")) attributes.put("username", "Anonymous");
+        if (!attributes.containsKey("room")) attributes.put("room", "general");
+
         return true;
     }
 

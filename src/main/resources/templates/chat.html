@@ -7,27 +7,27 @@
 </head>
 <body>
 
-<h2>Welcome, <span th:text="${username}"></span></h2>
-<p>Room: <strong th:text="${room}"></strong></p>
+<h2>Welcome, <span th:text="${username}">Anonymous</span></h2>
+<p>Room: <strong th:text="${room}">general</strong></p>
 
 <div id="chatBox" class="chat-box"></div>
 
 <div class="chat-input">
     <input type="text" id="messageInput" placeholder="Type a message"/>
-    <button onclick="sendMessage()">Send</button>
+    <button type="button" onclick="sendMessage()">Send</button>
 </div>
 
 <form action="/logout" method="get">
     <button type="submit">Logout</button>
 </form>
 
-<!-- Hidden data -->
-<span id="roomHolder" th:text="${room}" style="display:none"></span>
-<span id="usernameHolder" th:text="${username}" style="display:none"></span>
+<!-- Hidden data for JS -->
+<span id="roomHolder" th:text="${room}" style="display:none">general</span>
+<span id="usernameHolder" th:text="${username}" style="display:none">Anonymous</span>
 
 <script>
-    const room = document.getElementById("roomHolder").innerText;
-    const username = document.getElementById("usernameHolder").innerText;
+    const room = document.getElementById("roomHolder").innerText.trim();
+    const username = document.getElementById("usernameHolder").innerText.trim();
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
@@ -37,10 +37,18 @@
         "&username=" + encodeURIComponent(username)
     );
 
+    ws.onopen = function() {
+        console.log("WebSocket connected!");
+    };
+
     ws.onmessage = function(event) {
         const chatBox = document.getElementById("chatBox");
         chatBox.innerHTML += event.data + "<br/>";
         chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    ws.onerror = function(err) {
+        console.error("WebSocket error:", err);
     };
 
     function sendMessage() {
