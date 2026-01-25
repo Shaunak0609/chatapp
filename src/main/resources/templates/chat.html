@@ -1,49 +1,58 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>SheepChat</title>
+    <title>SheepChat 🐑 | Chat</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
+<body class="chat-page">
 
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>🐑 SheepChat</h2>
+    <p class="room-name">
+        Room: <span th:text="${room}"></span>
+    </p>
+
+    <form action="/logout" method="get">
+        <button class="logout-btn">Logout</button>
+    </form>
+</div>
+
+<!-- Main chat area -->
 <div class="chat-container">
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2>🐑 SheepChat</h2>
-        <p th:text="'Logged in as: ' + ${username}"></p>
-
-        <form action="/logout" method="get">
-            <button style="margin-top:10px;">Logout</button>
-        </form>
+    <div class="chat-header">
+        Welcome, <strong th:text="${username}"></strong>
     </div>
 
-    <!-- Main Chat -->
-    <div class="chat-main">
+    <div id="chatBox" class="chat-box"></div>
 
-        <div class="chat-header">
-            # general
-        </div>
-
-        <div id="chatBox" class="chat-box"></div>
-
-        <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="Message #general" />
-            <button onclick="sendMessage()">Send</button>
-        </div>
+    <div class="chat-input">
+        <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message..."
+            onkeydown="if(event.key === 'Enter') sendMessage()"
+        />
+        <button onclick="sendMessage()">Send</button>
     </div>
 </div>
 
-<!-- Hidden username -->
-<span id="usernameHolder" th:text="${username}" style="display:none"></span>
+<!-- Hidden values for JS -->
+<span id="usernameHolder" th:text="${username}" hidden></span>
+<span id="roomHolder" th:text="${room}" hidden></span>
 
 <script>
-    const username = document.getElementById("usernameHolder").innerText;
+    const username =
+        document.getElementById("usernameHolder").innerText;
 
-    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    const wsUrl = wsProtocol + window.location.host + "/chat";
+    const room =
+        document.getElementById("roomHolder").innerText;
 
-    let ws = new WebSocket(wsUrl);
+    // IMPORTANT: wss for Render (https)
+    const ws = new WebSocket(
+        `wss://chatapp-ks5w.onrender.com/ws/chat/${room}`
+    );
 
     ws.onmessage = (event) => {
         const chatBox = document.getElementById("chatBox");
@@ -52,10 +61,9 @@
     };
 
     function sendMessage() {
-        if (ws.readyState !== WebSocket.OPEN) return;
-
         const input = document.getElementById("messageInput");
-        if (!input.value.trim()) return;
+
+        if (input.value.trim() === "") return;
 
         ws.send(input.value);
         input.value = "";

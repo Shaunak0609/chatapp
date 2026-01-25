@@ -18,22 +18,32 @@ public class LoginController {
         return new ModelAndView("login"); // maps to login.html
     }
 
-    // Handle login form submission
     @PostMapping("/login")
-    public ModelAndView doLogin(@RequestParam String username, HttpSession session) {
+    public ModelAndView doLogin(
+            @RequestParam String username,
+            @RequestParam String room,
+            HttpSession session) {
+
         ModelAndView mv = new ModelAndView();
-        if (username == null || username.isEmpty()) {
+
+        if (username == null || username.isEmpty()
+                || room == null || room.isEmpty()) {
+
             mv.setViewName("login");
-            mv.addObject("error", "Username cannot be empty");
+            mv.addObject("error", "Username and room are required");
             return mv;
         }
-        // Save username in session
+
         session.setAttribute("username", username);
+        session.setAttribute("room", room);
 
         mv.setViewName("chat");
         mv.addObject("username", username);
+        mv.addObject("room", room);
+
         return mv;
-    }
+}
+
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {

@@ -10,9 +10,10 @@
     <div class="login-card">
         <h1>🐑 SheepChat</h1>
 
-        <form action="/login" method="post">
-            <input type="text" name="username" placeholder="Enter username" required />
-            <button type="submit">Enter Chat</button>
+        <form method="post" action="/login">
+            <input type="text" name="username" placeholder="Username" required />
+            <input type="text" name="room" placeholder="Room (e.g. general)" required />
+            <button type="submit">Join SheepChat 🐑</button>
         </form>
 
         <p th:if="${error}" style="color:red;" th:text="${error}"></p>

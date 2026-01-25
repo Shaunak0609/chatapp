@@ -7,7 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
     
-    @Query(value = "SELECT * FROM messages ORDER BY timestamp DESC LIMIT 25", nativeQuery= true)
-    List<Message> findLatest25Messages();
+    @Query(value = """
+        SELECT * FROM messages
+        WHERE room = :room
+        ORDER BY timestamp DESC
+        LIMIT 50
+    """, nativeQuery = true)
+    List<Message> findLast50MessagesByRoom(String room);
+
 
 }
