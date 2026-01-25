@@ -13,7 +13,7 @@ public class DataInitializer {
     CommandLineRunner seedRooms(ChatRoomService chatRoomService) {
         return args -> {
             List.of("general", "gaming", "music", "random")
-                .forEach(chatRoomService::getOrCreate);
+                .forEach(chatRoomService::getOrCreateRoom);
         };
     }
 }

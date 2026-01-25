@@ -15,7 +15,7 @@ public class ChatRoomService {
     }
 
     @Transactional
-    public ChatRoom getOrCreate(String room) {
+    public ChatRoom getOrCreateRoom(String room) {
         return repo.findByName(room)
                 .orElseGet(() -> repo.save(new ChatRoom(room)));
     }

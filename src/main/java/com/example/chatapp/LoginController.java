@@ -42,7 +42,7 @@ public class LoginController {
         String username = (String) session.getAttribute("username");
         if (username == null) return new ModelAndView("redirect:/login");
 
-        chatRoomService.getOrCreate(room);
+        chatRoomService.getOrCreateRoom(room);
 
         ModelAndView mv = new ModelAndView("chat");
         mv.addObject("username", username);
