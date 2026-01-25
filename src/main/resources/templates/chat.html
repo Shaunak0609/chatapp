@@ -7,19 +7,28 @@
 </head>
 <body>
 
-<h2>Welcome, <span th:text="${username}">Anonymous</span></h2>
-<p>Room: <strong th:text="${room}">general</strong></p>
+<div class="chat-container">
 
-<div id="chatBox" class="chat-box"></div>
+    <!-- Sidebar / Room info -->
+    <div class="sidebar">
+        <h2 th:text="${username}">Anonymous</h2>
+        <p>Room: <strong th:text="${room}">general</strong></p>
+        <form action="/logout" method="get">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
 
-<div class="chat-input">
-    <input type="text" id="messageInput" placeholder="Type a message"/>
-    <button type="button" onclick="sendMessage()">Send</button>
+    <!-- Main chat area -->
+    <div class="chat-main">
+        <div id="chatBox" class="chat-box"></div>
+
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Type a message"/>
+            <button type="button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
 </div>
-
-<form action="/logout" method="get">
-    <button type="submit">Logout</button>
-</form>
 
 <!-- Hidden data for JS -->
 <span id="roomHolder" th:text="${room}" style="display:none">general</span>
@@ -43,7 +52,26 @@
 
     ws.onmessage = function(event) {
         const chatBox = document.getElementById("chatBox");
-        chatBox.innerHTML += event.data + "<br/>";
+        const newMessage = document.createElement("div");
+        newMessage.classList.add("message");
+
+        // Split username and content
+        const splitIndex = event.data.indexOf(":");
+        if (splitIndex !== -1) {
+            const sender = event.data.substring(0, splitIndex);
+            const content = event.data.substring(splitIndex + 1).trim();
+
+            const senderSpan = document.createElement("span");
+            senderSpan.textContent = sender + ": ";
+            newMessage.appendChild(senderSpan);
+
+            const contentText = document.createTextNode(content);
+            newMessage.appendChild(contentText);
+        } else {
+            newMessage.textContent = event.data;
+        }
+
+        chatBox.appendChild(newMessage);
         chatBox.scrollTop = chatBox.scrollHeight;
     };
 
