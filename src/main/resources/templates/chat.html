@@ -2,23 +2,21 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chat</title>
+    <title>SheepChat | Chat</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
 <h2>Welcome, <span th:text="${username}"></span></h2>
 <p>Room: <strong th:text="${room}"></strong></p>
 
-<div id="chatBox"
-     style="border:1px solid black; height:300px; overflow-y:auto; padding:5px;">
+<div id="chatBox" class="chat-box"></div>
+
+<div class="chat-input">
+    <input type="text" id="messageInput" placeholder="Type a message"/>
+    <button onclick="sendMessage()">Send</button>
 </div>
 
-<br/>
-
-<input type="text" id="messageInput" placeholder="Type a message"/>
-<button onclick="sendMessage()">Send</button>
-
-<br/><br/>
 <form action="/logout" method="get">
     <button type="submit">Logout</button>
 </form>
@@ -33,7 +31,6 @@
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
-    // Pass room and username as query parameters
     const ws = new WebSocket(
         protocol + "://" + window.location.host +
         "/chat?room=" + encodeURIComponent(room) +

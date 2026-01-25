@@ -18,18 +18,19 @@ public class LoginController {
 
     @PostMapping("/login")
     public ModelAndView doLogin(@RequestParam String username, HttpSession session) {
+        ModelAndView mv = new ModelAndView();
         if (username == null || username.isEmpty()) {
-            ModelAndView mv = new ModelAndView("login");
+            mv.setViewName("login");
             mv.addObject("error", "Username cannot be empty");
             return mv;
         }
-
         session.setAttribute("username", username);
         return new ModelAndView("redirect:/chat");
     }
 
     @GetMapping("/chat")
-    public ModelAndView chat(@RequestParam(defaultValue = "general") String room, HttpSession session) {
+    public ModelAndView chat(@RequestParam(defaultValue = "general") String room,
+                             HttpSession session) {
         String username = (String) session.getAttribute("username");
         if (username == null) return new ModelAndView("redirect:/login");
 

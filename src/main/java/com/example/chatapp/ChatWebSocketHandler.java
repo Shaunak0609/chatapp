@@ -18,7 +18,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
-
     private static final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
 
     public ChatWebSocketHandler(MessageService messageService) {
@@ -28,10 +27,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String room = (String) session.getAttributes().get("room");
+        String username = (String) session.getAttributes().get("username");
+
+        System.out.println("WebSocket connected: room=" + room + ", username=" + username);
+
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
-        // Load last 50 messages
         List<Message> history = messageService.findLast50ByRoom(room);
         Collections.reverse(history);
         for (Message msg : history) {
@@ -47,6 +49,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (username == null) username = "Anonymous";
 
         String content = message.getPayload();
+        System.out.println("Received message: " + content);
 
         Message msg = new Message(username, content, room);
         messageService.saveMessage(msg);
