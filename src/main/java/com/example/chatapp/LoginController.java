@@ -12,9 +12,12 @@ import jakarta.servlet.http.HttpSession;
 public class LoginController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatWebSocketHandler chatWebSocketHandler;
 
-    public LoginController(ChatRoomService chatRoomService) {
+    public LoginController(ChatRoomService chatRoomService,
+                           ChatWebSocketHandler chatWebSocketHandler) {
         this.chatRoomService = chatRoomService;
+        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @GetMapping("/login")
@@ -23,24 +26,21 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ModelAndView doLogin(@RequestParam String username, HttpSession session) {
-        if (username == null || username.isBlank()) {
-            ModelAndView mv = new ModelAndView("login");
-            mv.addObject("error", "Username required");
-            return mv;
-        }
-
+    public String doLogin(@RequestParam String username, HttpSession session) {
         session.setAttribute("username", username);
-        return new ModelAndView("redirect:/chat");
+        return "redirect:/chat";
     }
 
     @GetMapping("/chat")
-    public ModelAndView chat(
-            @RequestParam(defaultValue = "general") String room,
-            HttpSession session) {
+    public ModelAndView chat(@RequestParam(defaultValue = "general") String room,
+                             HttpSession session) {
 
         String username = (String) session.getAttribute("username");
         if (username == null) return new ModelAndView("redirect:/login");
+
+        if (!chatRoomService.exists(room)) {
+            return new ModelAndView("redirect:/chat?room=general");
+        }
 
         chatRoomService.getOrCreateRoom(room);
 
@@ -51,18 +51,18 @@ public class LoginController {
         return mv;
     }
 
+    @PostMapping("/rooms/delete")
+    public String deleteRoom(@RequestParam String room) throws Exception {
+        if (!room.equals("general")) {
+            chatRoomService.deleteRoom(room);
+            chatWebSocketHandler.closeRoom(room);
+        }
+        return "redirect:/chat";
+    }
+
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         session.invalidate();
         return "redirect:/login";
     }
-
-    @PostMapping("/rooms/delete")
-    public String deleteRoom(@RequestParam String room) {
-        if (!room.equals("general")) {
-            chatRoomService.deleteRoom(room);
-        }
-        return "redirect:/chat";
-    }
-
 }

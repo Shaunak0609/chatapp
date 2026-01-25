@@ -17,14 +17,18 @@ public class ChatRoomService {
         this.messageRepository = messageRepository;
     }
 
-    @Transactional
-    public ChatRoom getOrCreateRoom(String room) {
-        return chatRoomRepository.findByName(room)
-                .orElseGet(() -> chatRoomRepository.save(new ChatRoom(room)));
+    public ChatRoom getOrCreateRoom(String name) {
+        return chatRoomRepository
+                .findByName(name)
+                .orElseGet(() -> chatRoomRepository.save(new ChatRoom(name)));
     }
 
     public List<ChatRoom> findAll() {
         return chatRoomRepository.findAll();
+    }
+
+    public boolean exists(String name) {
+        return chatRoomRepository.findByName(name).isPresent();
     }
 
     @Transactional

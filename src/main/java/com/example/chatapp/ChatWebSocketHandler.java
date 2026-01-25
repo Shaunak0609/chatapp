@@ -19,6 +19,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
 
+    // room -> sessions
     private static final Map<String, Set<WebSocketSession>> roomSessions =
             new ConcurrentHashMap<>();
 
@@ -31,9 +32,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
 
+        if (room == null) room = "general";
+        if (username == null) username = "Anonymous";
+
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
+        // Load last 50 messages
         List<Message> history = messageService.findLast50ByRoom(room);
         Collections.reverse(history);
 
@@ -51,13 +56,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
+
+        if (room == null) room = "general";
         if (username == null) username = "Anonymous";
 
         String content = message.getPayload();
 
-        messageService.saveMessage(new Message(username, content, room));
+        Message msg = new Message(username, content, room);
+        messageService.saveMessage(msg);
 
-        for (WebSocketSession s : roomSessions.get(room)) {
+        for (WebSocketSession s : roomSessions.getOrDefault(room, Set.of())) {
             if (s.isOpen()) {
                 s.sendMessage(
                     new TextMessage(username + ": " + content)
@@ -68,6 +76,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        roomSessions.values().forEach(s -> s.remove(session));
+        roomSessions.values().forEach(sessions -> sessions.remove(session));
+    }
+
+    // 🔥 CRITICAL FIX: close room for ALL users
+    public void closeRoom(String room) throws Exception {
+        Set<WebSocketSession> sessions = roomSessions.get(room);
+        if (sessions != null) {
+            for (WebSocketSession session : sessions) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage("__ROOM_DELETED__"));
+                    session.close();
+                }
+            }
+        }
+        roomSessions.remove(room);
     }
 }
