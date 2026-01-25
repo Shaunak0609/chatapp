@@ -22,23 +22,10 @@
                 <li><a href="/chat?room=random"># random</a></li>
             </ul>
         </div>
-           <!-- Sidebar / Room info -->
-    <div class="sidebar">
-        <h2 th:text="${username}">Anonymous</h2>
-        <p>Room: <strong th:text="${room}">general</strong></p>
-        <div class="rooms">
-            <h3>Rooms</h3>
-            <ul>
-                <li><a href="/chat?room=general"># general</a></li>
-                <li><a href="/chat?room=gaming"># gaming</a></li>
-                <li><a href="/chat?room=music"># music</a></li>
-                <li><a href="/chat?room=random"># random</a></li>
-            </ul>
         <form action="/chat" method="get">
             <input type="text" name="room" placeholder="New room..." required />
             <button type="submit">Join</button>
         </form>
-
         <form action="/logout" method="get">
             <button type="submit">Logout</button>
         </form>
