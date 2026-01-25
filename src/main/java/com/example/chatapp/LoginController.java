@@ -42,7 +42,24 @@ public class LoginController {
         mv.addObject("room", room);
 
         return mv;
-}
+    }
+
+    @GetMapping("/chat")
+    public ModelAndView chat(
+            @RequestParam(defaultValue = "general") String room,
+            HttpSession session
+    ) {
+        String username = (String) session.getAttribute("username");
+
+        if (username == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        ModelAndView mv = new ModelAndView("chat");
+        mv.addObject("username", username);
+        mv.addObject("room", room);
+        return mv;
+    }
 
 
     @GetMapping("/logout")

@@ -8,6 +8,8 @@
 
 <h2>Welcome, <span th:text="${username}"></span></h2>
 
+<p>Room: <strong th:text="${room}"></strong></p>
+
 <div id="chatBox"
      style="border:1px solid black; height:300px; overflow-y:auto; padding:5px;">
 </div>
@@ -23,14 +25,17 @@
     <button type="submit">Logout</button>
 </form>
 
-<!-- WebSocket -->
-<script>
-    // STEP 8: room is fixed here
-    // (room selection UI comes later)
-    const room = "general";
+<!-- 🔒 Hidden data passed from backend -->
+<span id="roomHolder" th:text="${room}" style="display:none"></span>
 
-    // Use wss on Render, ws locally
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+<script>
+    // Get room from backend (NOT hardcoded)
+    const room =
+        document.getElementById("roomHolder").innerText;
+
+    // ws locally, wss on Render
+    const protocol =
+        window.location.protocol === "https:" ? "wss" : "ws";
 
     const ws = new WebSocket(
         protocol + "://" + window.location.host + "/ws/chat/" + room
