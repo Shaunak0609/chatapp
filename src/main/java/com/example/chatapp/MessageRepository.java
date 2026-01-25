@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
-    
+
     @Query(value = """
         SELECT * FROM messages
         WHERE room = :room
@@ -14,6 +14,4 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         LIMIT 50
     """, nativeQuery = true)
     List<Message> findLast50MessagesByRoom(String room);
-
-
 }

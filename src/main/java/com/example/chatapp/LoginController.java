@@ -11,43 +11,27 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 public class LoginController {
 
-    // Show login page
     @GetMapping("/login")
     public ModelAndView showLogin() {
         return new ModelAndView("login");
     }
 
-    // Handle login form submission
     @PostMapping("/login")
-    public ModelAndView doLogin(
-            @RequestParam String username,
-            HttpSession session
-    ) {
-        ModelAndView mv = new ModelAndView();
-
+    public ModelAndView doLogin(@RequestParam String username, HttpSession session) {
         if (username == null || username.isEmpty()) {
-            mv.setViewName("login");
+            ModelAndView mv = new ModelAndView("login");
             mv.addObject("error", "Username cannot be empty");
             return mv;
         }
 
         session.setAttribute("username", username);
-
-        // Redirect to /chat (room handled there)
         return new ModelAndView("redirect:/chat");
     }
 
-    // ✅ THIS IS THE NEW METHOD (Step 8 fix)
     @GetMapping("/chat")
-    public ModelAndView chat(
-            @RequestParam(defaultValue = "general") String room,
-            HttpSession session
-    ) {
+    public ModelAndView chat(@RequestParam(defaultValue = "general") String room, HttpSession session) {
         String username = (String) session.getAttribute("username");
-
-        if (username == null) {
-            return new ModelAndView("redirect:/login");
-        }
+        if (username == null) return new ModelAndView("redirect:/login");
 
         ModelAndView mv = new ModelAndView("chat");
         mv.addObject("username", username);
@@ -55,7 +39,6 @@ public class LoginController {
         return mv;
     }
 
-    // Logout
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         session.invalidate();

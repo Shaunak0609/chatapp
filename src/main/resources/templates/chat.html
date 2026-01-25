@@ -7,7 +7,6 @@
 <body>
 
 <h2>Welcome, <span th:text="${username}"></span></h2>
-
 <p>Room: <strong th:text="${room}"></strong></p>
 
 <div id="chatBox"
@@ -20,25 +19,25 @@
 <button onclick="sendMessage()">Send</button>
 
 <br/><br/>
-
 <form action="/logout" method="get">
     <button type="submit">Logout</button>
 </form>
 
-<!-- 🔒 Hidden data passed from backend -->
+<!-- Hidden data -->
 <span id="roomHolder" th:text="${room}" style="display:none"></span>
+<span id="usernameHolder" th:text="${username}" style="display:none"></span>
 
 <script>
-    // Get room from backend (NOT hardcoded)
-    const room =
-        document.getElementById("roomHolder").innerText;
+    const room = document.getElementById("roomHolder").innerText;
+    const username = document.getElementById("usernameHolder").innerText;
 
-    // ws locally, wss on Render
-    const protocol =
-        window.location.protocol === "https:" ? "wss" : "ws";
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
+    // Pass room and username as query parameters
     const ws = new WebSocket(
-        protocol + "://" + window.location.host + "/chat/" + room
+        protocol + "://" + window.location.host +
+        "/chat?room=" + encodeURIComponent(room) +
+        "&username=" + encodeURIComponent(username)
     );
 
     ws.onmessage = function(event) {
@@ -49,9 +48,7 @@
 
     function sendMessage() {
         const input = document.getElementById("messageInput");
-
         if (input.value.trim() === "") return;
-
         ws.send(input.value);
         input.value = "";
     }
