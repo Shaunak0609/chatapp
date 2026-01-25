@@ -32,14 +32,13 @@ public class LoginController {
     }
 
     @GetMapping("/chat")
-    public ModelAndView chat(@RequestParam(defaultValue = "general") String room,
-                             HttpSession session) {
+    public ModelAndView chat(
+            @RequestParam(defaultValue = "general") String room,
+            HttpSession session) {
 
         String username = (String) session.getAttribute("username");
-        if (username == null) return new ModelAndView("redirect:/login");
-
-        if (!chatRoomService.exists(room)) {
-            return new ModelAndView("redirect:/chat?room=general");
+        if (username == null) {
+            return new ModelAndView("redirect:/login");
         }
 
         chatRoomService.getOrCreateRoom(room);
@@ -50,6 +49,7 @@ public class LoginController {
         mv.addObject("rooms", chatRoomService.findAll());
         return mv;
     }
+
 
     @PostMapping("/rooms/delete")
     public String deleteRoom(@RequestParam String room) throws Exception {
