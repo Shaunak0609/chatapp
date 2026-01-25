@@ -9,13 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class MessageService {
 
     private final MessageRepository messageRepository;
+    private final ChatRoomService chatRoomService;
 
-    public MessageService(MessageRepository messageRepository) {
+    public MessageService(MessageRepository messageRepository,
+                          ChatRoomService chatRoomService) {
         this.messageRepository = messageRepository;
+        this.chatRoomService = chatRoomService;
     }
 
     @Transactional
     public void saveMessage(Message message) {
+        // Ensure room exists
+        chatRoomService.getOrCreateRoom(message.getRoom());
+
         messageRepository.save(message);
     }
 
@@ -24,3 +30,4 @@ public class MessageService {
         return messageRepository.findLast50MessagesByRoom(room);
     }
 }
+
