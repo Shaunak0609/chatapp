@@ -9,15 +9,18 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final ChatWebSocketHandler handler;
+    private final ChatWebSocketHandler chatWebSocketHandler;
 
-    public WebSocketConfig(ChatWebSocketHandler handler) {
-        this.handler = handler;
+    public WebSocketConfig(ChatWebSocketHandler chatWebSocketHandler) {
+        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(handler, "/ws/chat")
-                .setAllowedOrigins("*");
+
+        registry
+            .addHandler(chatWebSocketHandler, "/ws/chat")
+            .addInterceptors(new UserHandshakeInterceptor())
+            .setAllowedOriginPatterns("*"); // REQUIRED for Render
     }
 }

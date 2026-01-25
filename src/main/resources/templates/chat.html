@@ -70,7 +70,7 @@
 
         const wsUrl =
             protocol + "://" + window.location.host +
-            "/chat?room=" + encodeURIComponent(room) +
+            "/ws/chat?room=" + encodeURIComponent(room) +
             "&username=" + encodeURIComponent(username);
 
         ws = new WebSocket(wsUrl);
