@@ -38,7 +38,7 @@
         window.location.protocol === "https:" ? "wss" : "ws";
 
     const ws = new WebSocket(
-        protocol + "://" + window.location.host + "/ws/chat/" + room
+        protocol + "://" + window.location.host + "/chat/" + room
     );
 
     ws.onmessage = function(event) {
