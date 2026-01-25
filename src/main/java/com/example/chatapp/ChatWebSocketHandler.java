@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -18,8 +17,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
-
-    private static final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
+    private static final Map<String, Set<WebSocketSession>> rooms = new ConcurrentHashMap<>();
 
     public ChatWebSocketHandler(MessageService messageService) {
         this.messageService = messageService;
@@ -27,47 +25,58 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        String room = (String) session.getAttributes().get("room");
-        String username = (String) session.getAttributes().get("username");
 
-        System.out.println("WebSocket connected: room=" + room + ", username=" + username);
+        String room = getParam(session, "room", "general");
+        String username = getParam(session, "username", "Anonymous");
 
-        roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
-        roomSessions.get(room).add(session);
+        session.getAttributes().put("room", room);
+        session.getAttributes().put("username", username);
 
-        // Load last 50 messages for this room
+        rooms.putIfAbsent(room, new CopyOnWriteArraySet<>());
+        rooms.get(room).add(session);
+
         List<Message> history = messageService.findLast50ByRoom(room);
-        System.out.println("Loaded " + history.size() + " messages for room: " + room);
-
         Collections.reverse(history);
+
         for (Message msg : history) {
-            session.sendMessage(new TextMessage(msg.getUsername() + ": " + msg.getContent()));
+            session.sendMessage(
+                new TextMessage(msg.getUsername() + ": " + msg.getContent())
+            );
         }
     }
 
     @Override
-    @Transactional
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
-        if (username == null || username.isEmpty()) username = "Anonymous";
 
-        String content = message.getPayload();
-        System.out.println("Saving message: " + username + ": " + content);
-
-        Message msg = new Message(username, content, room);
+        Message msg = new Message(username, message.getPayload(), room);
         messageService.saveMessage(msg);
 
-        // Broadcast to all users in this room
-        for (WebSocketSession s : roomSessions.get(room)) {
+        for (WebSocketSession s : rooms.get(room)) {
             if (s.isOpen()) {
-                s.sendMessage(new TextMessage(username + ": " + content));
+                s.sendMessage(new TextMessage(username + ": " + message.getPayload()));
             }
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        roomSessions.values().forEach(sessions -> sessions.remove(session));
+        rooms.values().forEach(set -> set.remove(session));
+    }
+
+    private String getParam(WebSocketSession session, String key, String def) {
+        if (session.getUri() == null) return def;
+        String query = session.getUri().getQuery();
+        if (query == null) return def;
+
+        for (String p : query.split("&")) {
+            String[] kv = p.split("=");
+            if (kv.length == 2 && kv[0].equals(key)) {
+                return kv[1];
+            }
+        }
+        return def;
     }
 }
