@@ -48,30 +48,36 @@
 <span id="usernameHolder" th:text="${username}" style="display:none">Anonymous</span>
 
 <script>
-    const room = document.getElementById("roomHolder").innerText;
-    const username = document.getElementById("usernameHolder").innerText;
+    const room = document.getElementById("roomHolder").innerText.trim();
+    const username = document.getElementById("usernameHolder").innerText.trim();
 
-    const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(
-        protocol + "://" + location.host +
-        "/ws/chat?room=" + encodeURIComponent(room) +
-        "&username=" + encodeURIComponent(username)
-    );
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
-    ws.onmessage = e => {
+    const wsUrl =
+        protocol + "://" + window.location.host +
+        "/chat?room=" + encodeURIComponent(room) +
+        "&username=" + encodeURIComponent(username);
+
+    console.log("Connecting to:", wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = function(event) {
+        const chatBox = document.getElementById("chatBox");
         const div = document.createElement("div");
-        div.textContent = e.data;
-        document.getElementById("chatBox").appendChild(div);
+        div.textContent = event.data;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
     };
 
     function sendMessage() {
         const input = document.getElementById("messageInput");
-        if (input.value.trim() !== "") {
-            ws.send(input.value);
-            input.value = "";
-        }
+        if (input.value.trim() === "") return;
+        ws.send(input.value);
+        input.value = "";
     }
 </script>
+
 
 
 </body>
