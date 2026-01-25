@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -17,66 +18,79 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
-    private static final Map<String, Set<WebSocketSession>> rooms = new ConcurrentHashMap<>();
+    private final ChatRoomService chatRoomService;
 
-    public ChatWebSocketHandler(MessageService messageService) {
+    private static final Map<String, Set<WebSocketSession>> roomSessions =
+            new ConcurrentHashMap<>();
+
+    public ChatWebSocketHandler(
+            MessageService messageService,
+            ChatRoomService chatRoomService
+    ) {
         this.messageService = messageService;
+        this.chatRoomService = chatRoomService;
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        String room = (String) session.getAttributes().get("room");
+        String username = (String) session.getAttributes().get("username");
 
-        String room = getParam(session, "room", "general");
-        String username = getParam(session, "username", "Anonymous");
+        if (room == null || room.isBlank()) {
+            room = "general";
+        }
 
-        session.getAttributes().put("room", room);
-        session.getAttributes().put("username", username);
+        // ✅ Ensure room exists in DB
+        chatRoomService.getOrCreateRoom(room);
 
-        rooms.putIfAbsent(room, new CopyOnWriteArraySet<>());
-        rooms.get(room).add(session);
+        roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
+        roomSessions.get(room).add(session);
 
+        // Load last 50 messages
         List<Message> history = messageService.findLast50ByRoom(room);
         Collections.reverse(history);
 
         for (Message msg : history) {
             session.sendMessage(
-                new TextMessage(msg.getUsername() + ": " + msg.getContent())
+                    new TextMessage(msg.getUsername() + ": " + msg.getContent())
             );
         }
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    @Transactional
+    protected void handleTextMessage(WebSocketSession session, TextMessage message)
+            throws Exception {
 
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
 
-        Message msg = new Message(username, message.getPayload(), room);
+        if (room == null || room.isBlank()) {
+            room = "general";
+        }
+        if (username == null || username.isBlank()) {
+            username = "Anonymous";
+        }
+
+        String content = message.getPayload();
+
+        // ✅ Ensure room exists
+        chatRoomService.getOrCreateRoom(room);
+
+        // Save message
+        Message msg = new Message(username, content, room);
         messageService.saveMessage(msg);
 
-        for (WebSocketSession s : rooms.get(room)) {
+        // Broadcast to room
+        for (WebSocketSession s : roomSessions.get(room)) {
             if (s.isOpen()) {
-                s.sendMessage(new TextMessage(username + ": " + message.getPayload()));
+                s.sendMessage(new TextMessage(username + ": " + content));
             }
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        rooms.values().forEach(set -> set.remove(session));
-    }
-
-    private String getParam(WebSocketSession session, String key, String def) {
-        if (session.getUri() == null) return def;
-        String query = session.getUri().getQuery();
-        if (query == null) return def;
-
-        for (String p : query.split("&")) {
-            String[] kv = p.split("=");
-            if (kv.length == 2 && kv[0].equals(key)) {
-                return kv[1];
-            }
-        }
-        return def;
+        roomSessions.values().forEach(sessions -> sessions.remove(session));
     }
 }
