@@ -9,8 +9,18 @@
 
 <div class="chat-container">
 
+    <!-- SIDEBAR -->
     <div class="sidebar">
         <h2 th:text="${username}">User</h2>
+
+        <!-- CREATE ROOM -->
+        <form action="/chat" method="get" class="create-room">
+            <input type="text"
+                   name="room"
+                   placeholder="Create / join room"
+                   required>
+            <button type="submit">+</button>
+        </form>
 
         <h3>Rooms</h3>
         <ul>
@@ -33,6 +43,7 @@
         </form>
     </div>
 
+    <!-- CHAT AREA -->
     <div class="chat-main">
         <div id="chatBox" class="chat-box"></div>
 
@@ -43,7 +54,7 @@
     </div>
 </div>
 
-<!-- Hidden data -->
+<!-- Hidden data for JS -->
 <span id="roomHolder" th:text="${room}" style="display:none"></span>
 <span id="usernameHolder" th:text="${username}" style="display:none"></span>
 
@@ -68,6 +79,8 @@
         const div = document.createElement("div");
         div.textContent = event.data;
         document.getElementById("chatBox").appendChild(div);
+        document.getElementById("chatBox").scrollTop =
+            document.getElementById("chatBox").scrollHeight;
     };
 
     function sendMessage() {
