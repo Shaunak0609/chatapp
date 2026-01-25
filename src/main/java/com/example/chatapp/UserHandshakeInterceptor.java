@@ -26,9 +26,13 @@ public class UserHandshakeInterceptor implements HandshakeInterceptor {
             }
         }
 
-        // Fallback defaults
-        if (!attributes.containsKey("username")) attributes.put("username", "Anonymous");
-        if (!attributes.containsKey("room")) attributes.put("room", "general");
+        // Default values if not provided
+        if (!attributes.containsKey("username") || ((String) attributes.get("username")).isEmpty()) {
+            attributes.put("username", "Anonymous");
+        }
+        if (!attributes.containsKey("room") || ((String) attributes.get("room")).isEmpty()) {
+            attributes.put("room", "general");
+        }
 
         return true;
     }

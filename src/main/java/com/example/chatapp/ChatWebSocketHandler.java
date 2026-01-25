@@ -18,6 +18,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
+
     private static final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
 
     public ChatWebSocketHandler(MessageService messageService) {
@@ -34,7 +35,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
+        // Load last 50 messages for this room
         List<Message> history = messageService.findLast50ByRoom(room);
+        System.out.println("Loaded " + history.size() + " messages for room: " + room);
+
         Collections.reverse(history);
         for (Message msg : history) {
             session.sendMessage(new TextMessage(msg.getUsername() + ": " + msg.getContent()));
@@ -46,7 +50,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
-        if (username == null) username = "Anonymous";
+        if (username == null || username.isEmpty()) username = "Anonymous";
 
         String content = message.getPayload();
         System.out.println("Saving message: " + username + ": " + content);
@@ -54,6 +58,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Message msg = new Message(username, content, room);
         messageService.saveMessage(msg);
 
+        // Broadcast to all users in this room
         for (WebSocketSession s : roomSessions.get(room)) {
             if (s.isOpen()) {
                 s.sendMessage(new TextMessage(username + ": " + content));

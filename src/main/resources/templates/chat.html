@@ -35,8 +35,8 @@
 <span id="usernameHolder" th:text="${username}" style="display:none">Anonymous</span>
 
 <script>
-    const room = document.getElementById("roomHolder").innerText.trim();
-    const username = document.getElementById("usernameHolder").innerText.trim();
+    const room = document.getElementById("roomHolder").innerText.trim() || "general";
+    const username = document.getElementById("usernameHolder").innerText.trim() || "Anonymous";
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
@@ -55,7 +55,6 @@
         const newMessage = document.createElement("div");
         newMessage.classList.add("message");
 
-        // Split username and content
         const splitIndex = event.data.indexOf(":");
         if (splitIndex !== -1) {
             const sender = event.data.substring(0, splitIndex);
