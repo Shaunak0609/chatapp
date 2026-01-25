@@ -24,16 +24,20 @@ public class Message {
 
     private LocalDateTime timestamp;
 
+    private String room;
+
     public Message() {}
 
-    public Message(String username, String content) {
+    public Message(String username, String content, String room) {
         this.username = username;
         this.content = content;
+        this.room = room;
         this.timestamp = LocalDateTime.now();
     }
 
     public Long getId() { return id; }
     public String getUsername() { return username; }
     public String getContent() { return content; }
+    public String getRoom() { return room; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }
