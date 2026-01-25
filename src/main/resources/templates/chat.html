@@ -2,17 +2,22 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>SheepChat | Chat</title>
+    <title>SheepChat</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
+
 <body>
 
 <div class="chat-container">
 
-    <!-- Sidebar / Room info -->
+    <!-- Sidebar -->
     <div class="sidebar">
         <h2 th:text="${username}">Anonymous</h2>
-        <p>Room: <strong th:text="${room}">general</strong></p>
+        <p>
+            Room:
+            <strong th:text="${room}">general</strong>
+        </p>
+
         <div class="rooms">
             <h3>Rooms</h3>
             <ul>
@@ -22,63 +27,101 @@
                 <li><a href="/chat?room=random"># random</a></li>
             </ul>
         </div>
-        <form action="/chat" method="get">
-            <input type="text" name="room" placeholder="New room..." required />
-            <button type="submit">Join</button>
-        </form>
+
         <form action="/logout" method="get">
             <button type="submit">Logout</button>
         </form>
     </div>
 
-    <!-- Main chat area -->
+    <!-- Main Chat -->
     <div class="chat-main">
         <div id="chatBox" class="chat-box"></div>
 
         <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="Type a message"/>
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Type a message..."
+                autocomplete="off"
+            />
             <button type="button" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
 </div>
 
-<!-- Hidden data for JS -->
+<!-- Hidden data injected by Thymeleaf -->
 <span id="roomHolder" th:text="${room}" style="display:none">general</span>
 <span id="usernameHolder" th:text="${username}" style="display:none">Anonymous</span>
 
 <script>
-    const room = document.getElementById("roomHolder").innerText.trim();
-    const username = document.getElementById("usernameHolder").innerText.trim();
+    let ws = null;
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    document.addEventListener("DOMContentLoaded", () => {
+        const room = document.getElementById("roomHolder").innerText.trim();
+        const username = document.getElementById("usernameHolder").innerText.trim();
 
-    const wsUrl =
-        protocol + "://" + window.location.host +
-        "/chat?room=" + encodeURIComponent(room) +
-        "&username=" + encodeURIComponent(username);
+        if (!room || !username) {
+            console.error("Missing room or username");
+            return;
+        }
 
-    console.log("Connecting to:", wsUrl);
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
-    const ws = new WebSocket(wsUrl);
+        const wsUrl =
+            protocol + "://" + window.location.host +
+            "/chat?room=" + encodeURIComponent(room) +
+            "&username=" + encodeURIComponent(username);
 
-    ws.onmessage = function(event) {
-        const chatBox = document.getElementById("chatBox");
-        const div = document.createElement("div");
-        div.textContent = event.data;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log("WebSocket connected:", wsUrl);
+        };
+
+        ws.onmessage = (event) => {
+            const chatBox = document.getElementById("chatBox");
+
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message");
+
+            msgDiv.textContent = event.data;
+
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        ws.onerror = (err) => {
+            console.error("WebSocket error:", err);
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket closed");
+        };
+    });
 
     function sendMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.warn("WebSocket not connected");
+            return;
+        }
+
         const input = document.getElementById("messageInput");
-        if (input.value.trim() === "") return;
-        ws.send(input.value);
+        const text = input.value.trim();
+
+        if (text === "") return;
+
+        ws.send(text);
         input.value = "";
     }
+
+    // IMPORTANT: close socket when switching rooms or leaving page
+    window.addEventListener("beforeunload", () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+        }
+    });
 </script>
-
-
 
 </body>
 </html>
