@@ -5,122 +5,68 @@
     <title>SheepChat</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-
 <body>
 
 <div class="chat-container">
 
-    <!-- Sidebar -->
     <div class="sidebar">
-        <h2 th:text="${username}">Anonymous</h2>
-        <p>
-            Room:
-            <strong th:text="${room}">general</strong>
-        </p>
+        <h2 th:text="${username}">User</h2>
 
-        <div class="rooms">
-            <h3>Rooms</h3>
-            <ul>
-                <li><a href="/chat?room=general"># general</a></li>
-                <li><a href="/chat?room=gaming"># gaming</a></li>
-                <li><a href="/chat?room=music"># music</a></li>
-                <li><a href="/chat?room=random"># random</a></li>
-            </ul>
-        </div>
+        <h3>Rooms</h3>
+        <ul>
+            <li th:each="r : ${rooms}">
+                <a th:href="@{/chat(room=${r.name})}"
+                   th:text="'# ' + ${r.name}"></a>
+            </li>
+        </ul>
+
+        <form action="/chat" method="get">
+            <input name="room" placeholder="New room" required>
+            <button type="submit">+</button>
+        </form>
 
         <form action="/logout" method="get">
-            <button type="submit">Logout</button>
+            <button>Logout</button>
         </form>
     </div>
 
-    <!-- Main Chat -->
     <div class="chat-main">
-        <div id="chatBox" class="chat-box"></div>
+        <div id="chatBox"></div>
 
         <div class="chat-input">
-            <input
-                type="text"
-                id="messageInput"
-                placeholder="Type a message..."
-                autocomplete="off"
-            />
-            <button type="button" onclick="sendMessage()">Send</button>
+            <input id="messageInput" placeholder="Message">
+            <button onclick="sendMessage()">Send</button>
         </div>
     </div>
-
 </div>
 
-<!-- Hidden data injected by Thymeleaf -->
-<span id="roomHolder" th:text="${room}" style="display:none">general</span>
-<span id="usernameHolder" th:text="${username}" style="display:none">Anonymous</span>
+<span id="roomHolder" th:text="${room}" hidden></span>
+<span id="usernameHolder" th:text="${username}" hidden></span>
 
 <script>
-    let ws = null;
+    const room = document.getElementById("roomHolder").innerText;
+    const username = document.getElementById("usernameHolder").innerText;
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const room = document.getElementById("roomHolder").innerText.trim();
-        const username = document.getElementById("usernameHolder").innerText.trim();
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(
+        protocol + "://" + location.host +
+        "/ws/chat?room=" + encodeURIComponent(room) +
+        "&username=" + encodeURIComponent(username)
+    );
 
-        if (!room || !username) {
-            console.error("Missing room or username");
-            return;
-        }
-
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-
-        const wsUrl =
-            protocol + "://" + window.location.host +
-            "/ws/chat?room=" + encodeURIComponent(room) +
-            "&username=" + encodeURIComponent(username);
-
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("WebSocket connected:", wsUrl);
-        };
-
-        ws.onmessage = (event) => {
-            const chatBox = document.getElementById("chatBox");
-
-            const msgDiv = document.createElement("div");
-            msgDiv.classList.add("message");
-
-            msgDiv.textContent = event.data;
-
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        };
-
-        ws.onerror = (err) => {
-            console.error("WebSocket error:", err);
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket closed");
-        };
-    });
+    ws.onmessage = e => {
+        const box = document.getElementById("chatBox");
+        box.innerHTML += `<div>${e.data}</div>`;
+        box.scrollTop = box.scrollHeight;
+    };
 
     function sendMessage() {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            console.warn("WebSocket not connected");
-            return;
-        }
-
         const input = document.getElementById("messageInput");
-        const text = input.value.trim();
-
-        if (text === "") return;
-
-        ws.send(text);
-        input.value = "";
-    }
-
-    // IMPORTANT: close socket when switching rooms or leaving page
-    window.addEventListener("beforeunload", () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.close();
+        if (input.value.trim()) {
+            ws.send(input.value);
+            input.value = "";
         }
-    });
+    }
 </script>
 
 </body>

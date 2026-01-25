@@ -18,17 +18,12 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
-    private final ChatRoomService chatRoomService;
 
     private static final Map<String, Set<WebSocketSession>> roomSessions =
             new ConcurrentHashMap<>();
 
-    public ChatWebSocketHandler(
-            MessageService messageService,
-            ChatRoomService chatRoomService
-    ) {
+    public ChatWebSocketHandler(MessageService messageService) {
         this.messageService = messageService;
-        this.chatRoomService = chatRoomService;
     }
 
     @Override
@@ -36,23 +31,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
 
-        if (room == null || room.isBlank()) {
-            room = "general";
-        }
-
-        // ✅ Ensure room exists in DB
-        chatRoomService.getOrCreateRoom(room);
-
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
-        // Load last 50 messages
         List<Message> history = messageService.findLast50ByRoom(room);
         Collections.reverse(history);
 
         for (Message msg : history) {
             session.sendMessage(
-                    new TextMessage(msg.getUsername() + ": " + msg.getContent())
+                new TextMessage(msg.getUsername() + ": " + msg.getContent())
             );
         }
     }
@@ -64,33 +51,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
-
-        if (room == null || room.isBlank()) {
-            room = "general";
-        }
-        if (username == null || username.isBlank()) {
-            username = "Anonymous";
-        }
+        if (username == null) username = "Anonymous";
 
         String content = message.getPayload();
 
-        // ✅ Ensure room exists
-        chatRoomService.getOrCreateRoom(room);
+        messageService.saveMessage(new Message(username, content, room));
 
-        // Save message
-        Message msg = new Message(username, content, room);
-        messageService.saveMessage(msg);
-
-        // Broadcast to room
         for (WebSocketSession s : roomSessions.get(room)) {
             if (s.isOpen()) {
-                s.sendMessage(new TextMessage(username + ": " + content));
+                s.sendMessage(
+                    new TextMessage(username + ": " + content)
+                );
             }
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        roomSessions.values().forEach(sessions -> sessions.remove(session));
+        roomSessions.values().forEach(s -> s.remove(session));
     }
 }

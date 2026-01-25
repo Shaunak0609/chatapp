@@ -10,12 +10,14 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 public class UserHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request,
-                                   ServerHttpResponse response,
-                                   WebSocketHandler wsHandler,
-                                   Map<String, Object> attributes) {
+    public boolean beforeHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Map<String, Object> attributes) {
 
-        String query = request.getURI().getQuery(); // e.g., room=general&username=John
+        String query = request.getURI().getQuery();
+
         if (query != null) {
             for (String param : query.split("&")) {
                 String[] kv = param.split("=");
@@ -26,20 +28,16 @@ public class UserHandshakeInterceptor implements HandshakeInterceptor {
             }
         }
 
-        // Default values if not provided
-        if (!attributes.containsKey("username") || ((String) attributes.get("username")).isEmpty()) {
-            attributes.put("username", "Anonymous");
-        }
-        if (!attributes.containsKey("room") || ((String) attributes.get("room")).isEmpty()) {
-            attributes.put("room", "general");
-        }
+        attributes.putIfAbsent("username", "Anonymous");
+        attributes.putIfAbsent("room", "general");
 
         return true;
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request,
-                               ServerHttpResponse response,
-                               WebSocketHandler wsHandler,
-                               Exception exception) {}
+    public void afterHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Exception exception) {}
 }

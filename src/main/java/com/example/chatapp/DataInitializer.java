@@ -1,5 +1,7 @@
 package com.example.chatapp;
 
+import java.util.List;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,14 +10,10 @@ import org.springframework.context.annotation.Configuration;
 public class DataInitializer {
 
     @Bean
-    CommandLineRunner seedRooms(ChatRoomRepository repo) {
+    CommandLineRunner seedRooms(ChatRoomService chatRoomService) {
         return args -> {
-            String[] rooms = { "general", "gaming", "music", "random" };
-
-            for (String room : rooms) {
-                repo.findByName(room)
-                    .orElseGet(() -> repo.save(new ChatRoom(room)));
-            }
+            List.of("general", "gaming", "music", "random")
+                .forEach(chatRoomService::getOrCreate);
         };
     }
 }

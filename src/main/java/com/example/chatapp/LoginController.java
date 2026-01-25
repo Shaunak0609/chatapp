@@ -11,10 +11,10 @@ import jakarta.servlet.http.HttpSession;
 @Controller
 public class LoginController {
 
-    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomService chatRoomService;
 
-    public LoginController(ChatRoomRepository chatRoomRepository) {
-        this.chatRoomRepository = chatRoomRepository;
+    public LoginController(ChatRoomService chatRoomService) {
+        this.chatRoomService = chatRoomService;
     }
 
     @GetMapping("/login")
@@ -24,12 +24,12 @@ public class LoginController {
 
     @PostMapping("/login")
     public ModelAndView doLogin(@RequestParam String username, HttpSession session) {
-        ModelAndView mv = new ModelAndView();
-        if (username == null || username.isEmpty()) {
-            mv.setViewName("login");
-            mv.addObject("error", "Username cannot be empty");
+        if (username == null || username.isBlank()) {
+            ModelAndView mv = new ModelAndView("login");
+            mv.addObject("error", "Username required");
             return mv;
         }
+
         session.setAttribute("username", username);
         return new ModelAndView("redirect:/chat");
     }
@@ -37,21 +37,19 @@ public class LoginController {
     @GetMapping("/chat")
     public ModelAndView chat(
             @RequestParam(defaultValue = "general") String room,
-            HttpSession session
-    ) {
+            HttpSession session) {
+
         String username = (String) session.getAttribute("username");
-        if (username == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        chatRoomRepository.findByName(room)
-                .orElseGet(() -> chatRoomRepository.save(new ChatRoom(room)));
+        if (username == null) return new ModelAndView("redirect:/login");
+
+        chatRoomService.getOrCreate(room);
 
         ModelAndView mv = new ModelAndView("chat");
         mv.addObject("username", username);
         mv.addObject("room", room);
+        mv.addObject("rooms", chatRoomService.findAll());
         return mv;
     }
-
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
