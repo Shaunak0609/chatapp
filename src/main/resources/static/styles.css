@@ -111,10 +111,6 @@ body {
     color: #5865f2;
 }
 
-.timestamp {
-    color: #888;
-}
-
 .chat-input {
     display: flex;
     padding: 10px;

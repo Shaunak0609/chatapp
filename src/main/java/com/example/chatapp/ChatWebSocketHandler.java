@@ -14,14 +14,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // room -> sessions
     private static final Map<String, Set<WebSocketSession>> roomSessions =
             new ConcurrentHashMap<>();
 
@@ -34,6 +32,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
 
+        if (room == null) room = "general";
+        if (username == null) username = "Anonymous";
+
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
@@ -42,8 +43,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Collections.reverse(history);
 
         for (Message msg : history) {
-            String json = objectMapper.writeValueAsString(msg);
-            session.sendMessage(new TextMessage(json));
+            session.sendMessage(
+                new TextMessage(msg.getUsername() + ": " + msg.getContent())
+            );
         }
     }
 
@@ -55,18 +57,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String room = (String) session.getAttributes().get("room");
         String username = (String) session.getAttributes().get("username");
 
-        if (username == null || username.isEmpty()) {
-            username = "Anonymous";
-        }
+        if (room == null) room = "general";
+        if (username == null) username = "Anonymous";
 
-        Message msg = new Message(username, message.getPayload(), room);
+        String content = message.getPayload();
+
+        Message msg = new Message(username, content, room);
         messageService.saveMessage(msg);
 
-        String json = objectMapper.writeValueAsString(msg);
-
-        for (WebSocketSession s : roomSessions.get(room)) {
+        for (WebSocketSession s : roomSessions.getOrDefault(room, Set.of())) {
             if (s.isOpen()) {
-                s.sendMessage(new TextMessage(json));
+                s.sendMessage(
+                    new TextMessage(username + ": " + content)
+                );
             }
         }
     }
@@ -76,7 +79,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         roomSessions.values().forEach(sessions -> sessions.remove(session));
     }
 
-    // Used when deleting rooms
+    // 🔥 CRITICAL FIX: close room for ALL users
     public void closeRoom(String room) throws Exception {
         Set<WebSocketSession> sessions = roomSessions.get(room);
         if (sessions != null) {
