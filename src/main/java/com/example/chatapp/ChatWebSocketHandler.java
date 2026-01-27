@@ -1,5 +1,6 @@
 package com.example.chatapp;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -8,35 +9,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final MessageService messageService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MessageRepository messageRepository;
 
     // room -> sessions
     private static final Map<String, Set<WebSocketSession>> roomSessions =
             new ConcurrentHashMap<>();
 
-    public ChatWebSocketHandler(MessageService messageService) {
-        this.messageService = messageService;
+    public ChatWebSocketHandler(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
-        String room = (String) session.getAttributes().get("room");
-        String username = (String) session.getAttributes().get("username");
-
-        if (room == null || username == null) {
+        String room = extractRoom(session);
+        if (room == null) {
             session.close();
             return;
         }
@@ -44,44 +39,38 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());
         roomSessions.get(room).add(session);
 
-        // Load last 50 messages for this room
-        List<Message> history = messageService.findLast50ByRoom(room);
+        // Send last 50 messages for THIS room only
+        List<Message> history =
+                messageRepository.findLast50MessagesByRoom(room);
         Collections.reverse(history);
 
         for (Message msg : history) {
-            session.sendMessage(
-                new TextMessage(objectMapper.writeValueAsString(msg))
-            );
+            session.sendMessage(new TextMessage(
+                    msg.getUsername() + ": " + msg.getContent()
+            ));
         }
     }
 
     @Override
-    @Transactional
     protected void handleTextMessage(WebSocketSession session, TextMessage message)
             throws Exception {
 
-        String room = (String) session.getAttributes().get("room");
-        String username = (String) session.getAttributes().get("username");
+        String room = extractRoom(session);
+        if (room == null) return;
 
-        if (room == null || username == null) {
-            return;
+        String username = "Anonymous";
+        if (session.getPrincipal() != null) {
+            username = session.getPrincipal().getName();
         }
 
-        String content = message.getPayload().trim();
-        if (content.isEmpty()) {
-            return;
-        }
+        Message msg = new Message(username, message.getPayload(), room);
+        messageRepository.save(msg);
 
-        // Persist message
-        Message msg = new Message(username, content, room);
-        messageService.saveMessage(msg);
-
-        String json = objectMapper.writeValueAsString(msg);
-
-        // Broadcast to everyone in the room
-        for (WebSocketSession s : roomSessions.get(room)) {
+        for (WebSocketSession s : roomSessions.getOrDefault(room, Set.of())) {
             if (s.isOpen()) {
-                s.sendMessage(new TextMessage(json));
+                s.sendMessage(new TextMessage(
+                        username + ": " + message.getPayload()
+                ));
             }
         }
     }
@@ -89,5 +78,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         roomSessions.values().forEach(set -> set.remove(session));
+    }
+
+    private String extractRoom(WebSocketSession session) {
+        URI uri = session.getUri();
+        if (uri == null || uri.getQuery() == null) return null;
+
+        for (String param : uri.getQuery().split("&")) {
+            String[] pair = param.split("=");
+            if (pair.length == 2 && pair[0].equals("room")) {
+                return pair[1];
+            }
+        }
+        return null;
     }
 }
