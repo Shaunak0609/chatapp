@@ -5,10 +5,52 @@
 
 body {
     margin: 0;
-    background-color: #313338;
-    color: #dcddde;
+    font-family: system-ui, sans-serif;
+    background: #1e1f22;
+    color: #fff;
 }
 
+/* AUTH */
+.auth-page {
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-card {
+    background: #2b2d31;
+    padding: 40px;
+    border-radius: 12px;
+    width: 320px;
+    text-align: center;
+}
+
+.auth-card input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: none;
+    background: #1e1f22;
+    color: white;
+}
+
+.auth-card button {
+    width: 100%;
+    padding: 12px;
+    background: #5865f2;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.auth-card a {
+    color: #5865f2;
+    text-decoration: none;
+}
 
 .login-container {
     height: 100vh;

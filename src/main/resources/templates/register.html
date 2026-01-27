@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>SheepChat – Register</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-card">
+    <h1>🐑 Join SheepChat</h1>
+
+    <form method="post" action="/register">
+        <input name="username" placeholder="Choose username" required>
+        <input name="password" type="password" placeholder="Choose password" required>
+        <button type="submit">Create Account</button>
+    </form>
+
+    <p>
+        Already have an account?
+        <a href="/login">Login</a>
+    </p>
+</div>
+
+</body>
+</html>
