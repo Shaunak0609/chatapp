@@ -22,8 +22,8 @@ public class SecurityConfig {
                 // allow login page
                 .requestMatchers("/login").permitAll()
 
-                // 🔥 allow WebSocket handshake
-                .requestMatchers("/chat").permitAll()
+
+                .requestMatchers("/ws/chat").permitAll()
 
                 // everything else requires auth
                 .anyRequest().authenticated()
