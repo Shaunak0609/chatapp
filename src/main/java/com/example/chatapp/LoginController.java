@@ -66,4 +66,18 @@ public class LoginController {
 
         return "chat";
     }
+
+    @PostMapping("/rooms/delete")
+    public String deleteRoom(@RequestParam String room) {
+
+        if (!room.equals("general")) {
+            chatRoomService.deleteRoom(room);
+
+           
+            ChatWebSocketHandler.notifyRoomDeleted(room);
+        }
+
+        return "redirect:/chat?room=general";
+    }
+
 }

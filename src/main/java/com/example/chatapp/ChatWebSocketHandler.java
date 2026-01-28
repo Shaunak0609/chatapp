@@ -92,4 +92,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
         return null;
     }
+
+    public static void notifyRoomDeleted(String room) {
+        Set<WebSocketSession> sessions = roomSessions.get(room);
+
+        if (sessions != null) {
+            for (WebSocketSession s : sessions) {
+                try {
+                    if (s.isOpen()) {
+                        s.sendMessage(new TextMessage("__ROOM_DELETED__"));
+                        s.close();
+                    }
+                } catch (Exception ignored) {}
+            }
+            roomSessions.remove(room);
+        }
+    }
 }
