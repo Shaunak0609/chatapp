@@ -1,5 +1,7 @@
 # SheepChat
 
+https://chatapp-ks5w.onrender.com/login
+
 SheepChat is a simple secure real-time chat application built with **Java** and **Spring Boot**, featuring multi-room messaging, persistent chat history, and authenticated user accounts. The application uses **WebSockets** for low-latency real-time communication and **PostgreSQL** for data persistence, allowing users to create accounts, join chat rooms, and communicate instantly across concurrent sessions.
 
 The project was designed to simulate the architecture of modern chat platforms by combining traditional REST-based navigation and authentication with persistent WebSocket connections for live messaging. Users can dynamically create and delete chat rooms, with server-side synchronization ensuring all connected clients stay updated in real time.
