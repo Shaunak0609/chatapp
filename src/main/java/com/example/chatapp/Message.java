@@ -26,6 +26,12 @@ public class Message {
 
     private String room;
 
+    // Nullable attachment fields — null for plain text messages
+    private Long attachmentId;
+    private String attachmentUrl;
+    private String attachmentOriginalName;
+    private String attachmentType;
+
     public Message() {}
 
     public Message(String username, String content, String room) {
@@ -40,4 +46,16 @@ public class Message {
     public String getContent() { return content; }
     public String getRoom() { return room; }
     public LocalDateTime getTimestamp() { return timestamp; }
+
+    public Long getAttachmentId() { return attachmentId; }
+    public void setAttachmentId(Long v) { this.attachmentId = v; }
+
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String v) { this.attachmentUrl = v; }
+
+    public String getAttachmentOriginalName() { return attachmentOriginalName; }
+    public void setAttachmentOriginalName(String v) { this.attachmentOriginalName = v; }
+
+    public String getAttachmentType() { return attachmentType; }
+    public void setAttachmentType(String v) { this.attachmentType = v; }
 }

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SheepChat – Register</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
@@ -8,16 +10,24 @@
 
 <div class="auth-card">
     <h1>🐑 Join SheepChat</h1>
+    <p class="auth-subtitle">Create a free account to start chatting.</p>
+
+    <div th:if="${param.error}" class="error-banner">
+        That username is already taken. Try another.
+    </div>
 
     <form method="post" action="/register">
-        <input name="username" placeholder="Choose username" required>
-        <input name="password" type="password" placeholder="Choose password" required>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" placeholder="Choose a username" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Choose a password" required>
+
         <button type="submit">Create Account</button>
     </form>
 
-    <p>
-        Already have an account?
-        <a href="/login">Login</a>
+    <p class="auth-footer">
+        Already have an account? <a href="/login">Log in</a>
     </p>
 </div>
 

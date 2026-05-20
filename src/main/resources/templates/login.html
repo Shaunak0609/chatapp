@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SheepChat – Login</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
@@ -8,16 +10,27 @@
 
 <div class="auth-card">
     <h1>🐑 SheepChat</h1>
+    <p class="auth-subtitle">Welcome back! Log in to continue.</p>
+
+    <div th:if="${param.error}" class="error-banner">
+        Incorrect username or password.
+    </div>
+    <div th:if="${param.logout}" class="success-banner">
+        You have been logged out.
+    </div>
 
     <form method="post" action="/login">
-        <input name="username" placeholder="Username" required>
-        <input name="password" type="password" placeholder="Password" required>
-        <button type="submit">Login</button>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" placeholder="Enter your username" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter your password" required>
+
+        <button type="submit">Log In</button>
     </form>
 
-    <p>
-        New here?
-        <a href="/register">Create an account</a>
+    <p class="auth-footer">
+        New here? <a href="/register">Create an account</a>
     </p>
 </div>
 
