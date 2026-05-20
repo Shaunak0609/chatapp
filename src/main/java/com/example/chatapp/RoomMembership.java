@@ -26,11 +26,28 @@ public class RoomMembership {
 
     private LocalDateTime joinedAt;
 
+    /**
+     * OWNER – created the private room.
+     * MEMBER – accepted an invite.
+     * null   – public room tracking record (role not applicable).
+     */
+    @Column(nullable = true)
+    private String role;
+
     public RoomMembership() {}
 
+    /** Used by RoomMembershipService.getOrCreateJoinTime for public rooms. */
     public RoomMembership(String username, String roomName) {
         this.username = username;
         this.roomName = roomName;
+        this.joinedAt = LocalDateTime.now();
+    }
+
+    /** Used when explicitly assigning a role (OWNER / MEMBER). */
+    public RoomMembership(String username, String roomName, String role) {
+        this.username = username;
+        this.roomName = roomName;
+        this.role = role;
         this.joinedAt = LocalDateTime.now();
     }
 
@@ -38,4 +55,6 @@ public class RoomMembership {
     public String getUsername() { return username; }
     public String getRoomName() { return roomName; }
     public LocalDateTime getJoinedAt() { return joinedAt; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

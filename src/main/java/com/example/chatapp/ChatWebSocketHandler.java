@@ -29,6 +29,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageRepository messageRepository;
     private final AttachmentRepository attachmentRepository;
     private final RoomMembershipService roomMembershipService;
+    private final ChatRoomService chatRoomService;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -39,10 +40,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     public ChatWebSocketHandler(MessageRepository messageRepository,
                                 AttachmentRepository attachmentRepository,
-                                RoomMembershipService roomMembershipService) {
+                                RoomMembershipService roomMembershipService,
+                                ChatRoomService chatRoomService) {
         this.messageRepository = messageRepository;
         this.attachmentRepository = attachmentRepository;
         this.roomMembershipService = roomMembershipService;
+        this.chatRoomService = chatRoomService;
     }
 
     @Override
@@ -51,8 +54,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String username = usernameFromSession(session);
 
         if (room == null || username == null) {
-            session.close();
+            session.close(CloseStatus.POLICY_VIOLATION);
             return;
+        }
+
+        // Block non-members from private rooms at the WebSocket level
+        Optional<ChatRoom> roomOpt = chatRoomService.findRoom(room);
+        if (roomOpt.isPresent() && roomOpt.get().isPrivateRoom()) {
+            if (!roomMembershipService.isMember(username, room)) {
+                session.close(CloseStatus.POLICY_VIOLATION);
+                return;
+            }
         }
 
         roomSessions.putIfAbsent(room, new CopyOnWriteArraySet<>());

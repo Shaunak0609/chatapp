@@ -8,44 +8,140 @@
 </head>
 <body>
 
+<!-- ========================================================
+     PRIVATE ROOM CREATION MODAL
+     ======================================================== -->
+<div id="privateRoomModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Create Private Room</h3>
+            <button type="button" class="modal-close" onclick="closeModal()">&#10005;</button>
+        </div>
+
+        <form action="/rooms/create" method="post" class="modal-form">
+            <input type="hidden" name="privateRoom" value="true">
+
+            <label class="field-label" for="prRoomName">Room name</label>
+            <input id="prRoomName" type="text" name="roomName"
+                   placeholder="e.g. dev-team" required
+                   pattern="[a-zA-Z0-9_\-]{1,50}"
+                   title="Letters, numbers, hyphens, underscores (max 50)">
+
+            <label class="field-label">Invite users</label>
+
+            <div class="invite-user-list" th:if="${not #lists.isEmpty(allUsernames)}">
+                <label th:each="uname : ${allUsernames}" class="invite-user-row">
+                    <input type="checkbox" name="invitees" th:value="${uname}">
+                    <span th:text="${uname}"></span>
+                </label>
+            </div>
+            <p th:if="${#lists.isEmpty(allUsernames)}" class="dim-text">No other users registered yet.</p>
+
+            <label class="field-label" for="prManualUser">Or type a username</label>
+            <input id="prManualUser" type="text" name="inviteByUsername"
+                   placeholder="username…" autocomplete="off">
+
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Create Room</button>
+                <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================
+     MAIN LAYOUT
+     ======================================================== -->
 <div class="chat-container">
 
     <!-- ===== SIDEBAR ===== -->
     <div class="sidebar">
         <div class="sidebar-header">🐑 SheepChat</div>
 
+        <!-- Quick create / join PUBLIC room -->
         <div class="sidebar-section-label">Rooms</div>
-
         <div class="create-room-form">
             <form action="/chat" method="get" style="display:flex;gap:4px;width:100%">
-                <input type="text" name="room" placeholder="New room…" required>
-                <button type="submit" title="Join or create room">+</button>
+                <input type="text" name="room" placeholder="Join / create room…" required>
+                <button type="submit" title="Join or create public room">+</button>
             </form>
         </div>
 
+        <!-- Create private room button -->
+        <div style="padding:0 8px 6px">
+            <button type="button" class="btn-create-private" onclick="openModal()">
+                &#128274; Create Private Room
+            </button>
+        </div>
+
+        <!-- Room list -->
         <ul class="room-list">
             <li th:each="r : ${rooms}" class="room-item">
                 <a th:href="@{/chat(room=${r.name})}"
-                   th:text="'# ' + ${r.name}"
-                   th:class="${r.name == room} ? 'room-link active' : 'room-link'"></a>
+                   th:class="${r.name == room} ? 'room-link active' : 'room-link'">
+                    <span th:if="${r.privateRoom}" class="room-lock">&#128274;</span>
+                    <span th:text="'# ' + ${r.name}"></span>
+                </a>
 
-                <form th:if="${r.name != 'general'}"
-                      action="/rooms/delete" method="post"
-                      style="margin:0">
+                <form th:if="${r.name != 'general'
+                               and (not r.privateRoom or r.ownerUsername == username)}"
+                      action="/rooms/delete" method="post" style="margin:0">
                     <input type="hidden" name="room" th:value="${r.name}">
-                    <button type="submit" class="room-delete-btn" title="Delete room">✕</button>
+                    <button type="submit" class="room-delete-btn" title="Delete room">&#10005;</button>
                 </form>
             </li>
         </ul>
 
+        <!-- Footer: user info + invites + logout -->
         <div class="sidebar-footer">
             <div class="current-user">
                 <span th:text="${username}">User</span>
                 <small>Online</small>
             </div>
+
+            <button type="button" id="invitesToggleBtn" class="invites-toggle-btn"
+                    title="Pending invites"
+                    onclick="toggleInvitesPanel()">
+                &#128276;
+                <span th:if="${pendingInvites.size() > 0}"
+                      class="invite-badge"
+                      th:text="${pendingInvites.size()}">0</span>
+            </button>
+
             <form action="/logout" method="get" style="margin:0">
                 <button type="submit" class="logout-btn">Logout</button>
             </form>
+        </div>
+    </div>
+
+    <!-- ===== INVITES PANEL (slides in over the chat area) ===== -->
+    <div id="invitesPanel" class="invites-panel" style="display:none">
+        <div class="invites-panel-header">
+            <h3>Pending Invites</h3>
+            <button type="button" class="modal-close" onclick="toggleInvitesPanel()">&#10005;</button>
+        </div>
+
+        <div class="invites-list">
+            <div th:each="inv : ${pendingInvites}" class="invite-card">
+                <div class="invite-info">
+                    <span class="invite-room">&#128274; #<span th:text="${inv.roomName}"></span></span>
+                    <span class="invite-from">invited by <strong th:text="${inv.inviterUsername}"></strong></span>
+                </div>
+                <div class="invite-actions">
+                    <form action="/invites/accept" method="post" style="display:inline">
+                        <input type="hidden" name="inviteId" th:value="${inv.id}">
+                        <button type="submit" class="btn-accept">Accept</button>
+                    </form>
+                    <form action="/invites/decline" method="post" style="display:inline">
+                        <input type="hidden" name="inviteId" th:value="${inv.id}">
+                        <button type="submit" class="btn-decline">Decline</button>
+                    </form>
+                </div>
+            </div>
+
+            <p th:if="${pendingInvites.size() == 0}" class="no-invites">
+                No pending invites
+            </p>
         </div>
     </div>
 
@@ -54,7 +150,13 @@
         <div class="chat-header">
             <span class="hash">#</span>
             <span th:text="${room}">general</span>
+            <span th:if="${currentRoom != null and currentRoom.privateRoom}"
+                  class="private-badge">&#128274; private</span>
         </div>
+
+        <!-- Flash notifications -->
+        <div th:if="${chatError}" class="notification notification-error" th:text="${chatError}"></div>
+        <div th:if="${chatSuccess}" class="notification notification-success" th:text="${chatSuccess}"></div>
 
         <div id="chatBox" class="chat-box"></div>
 
@@ -73,12 +175,12 @@
     </div>
 </div>
 
-<!-- Server data passed to JS -->
+<!-- Server data for JS -->
 <span id="roomHolder" th:text="${room}" style="display:none"></span>
 
 <script>
+    // ---- WebSocket ----
     const room = document.getElementById("roomHolder").innerText;
-
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(
         protocol + "://" + location.host + "/ws/chat?room=" + encodeURIComponent(room)
@@ -86,28 +188,20 @@
 
     ws.onmessage = (event) => {
         let data;
-        try {
-            data = JSON.parse(event.data);
-        } catch (_) {
-            appendLegacyText(event.data);
-            return;
-        }
+        try { data = JSON.parse(event.data); }
+        catch (_) { appendLegacyText(event.data); return; }
 
         if (data.type === "system" && data.content === "__ROOM_DELETED__") {
             alert("This room was deleted.");
             location.href = "/chat?room=general";
             return;
         }
-
-        if (data.type === "message") {
-            appendMessage(data);
-        }
+        if (data.type === "message") appendMessage(data);
     };
 
     ws.onerror = () => console.error("WebSocket error");
 
-    // ---- Rendering helpers ----
-
+    // ---- Rendering ----
     function escapeHtml(str) {
         if (!str) return "";
         const d = document.createElement("div");
@@ -117,11 +211,8 @@
 
     function formatTime(iso) {
         if (!iso) return "";
-        try {
-            return new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-        } catch (_) {
-            return "";
-        }
+        try { return new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}); }
+        catch (_) { return ""; }
     }
 
     function scrollDown() {
@@ -148,15 +239,12 @@
             if (isImage) {
                 html += `<div class="msg-attachment">
                     <a href="${msg.attachmentUrl}" target="_blank" rel="noopener">
-                        <img src="${msg.attachmentUrl}"
-                             alt="${escapeHtml(msg.attachmentName)}"
-                             class="msg-image">
+                        <img src="${msg.attachmentUrl}" alt="${escapeHtml(msg.attachmentName)}" class="msg-image">
                     </a>
                 </div>`;
             } else {
                 html += `<div class="msg-attachment">
-                    <a href="${msg.attachmentUrl}" target="_blank" rel="noopener"
-                       class="msg-file-link">
+                    <a href="${msg.attachmentUrl}" target="_blank" rel="noopener" class="msg-file-link">
                         &#128206; ${escapeHtml(msg.attachmentName)}
                     </a>
                 </div>`;
@@ -178,7 +266,6 @@
     }
 
     // ---- File upload ----
-
     let pendingAttachment = null;
 
     document.getElementById("uploadBtn").addEventListener("click", () => {
@@ -188,17 +275,14 @@
     document.getElementById("fileInput").addEventListener("change", async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const fd = new FormData();
         fd.append("file", file);
-
         try {
             const resp = await fetch("/attachments/upload", {method: "POST", body: fd});
             const result = await resp.json();
             if (resp.ok) {
                 pendingAttachment = result;
-                const preview = document.getElementById("attachmentPreview");
-                preview.innerHTML =
+                document.getElementById("attachmentPreview").innerHTML =
                     `&#128206; ${escapeHtml(result.name)} ` +
                     `<button class="clear-att" onclick="clearAttachment()">&#10005;</button>`;
             } else {
@@ -207,7 +291,6 @@
         } catch (err) {
             alert("Upload error: " + err.message);
         }
-
         e.target.value = "";
     });
 
@@ -216,18 +299,15 @@
         document.getElementById("attachmentPreview").innerHTML = "";
     }
 
-    // ---- Send ----
-
+    // ---- Send message ----
     function sendMessage() {
         const input = document.getElementById("messageInput");
         const content = input.value.trim();
         if (!content && !pendingAttachment) return;
-
         ws.send(JSON.stringify({
             content: content,
             attachmentId: pendingAttachment ? pendingAttachment.id : null
         }));
-
         input.value = "";
         clearAttachment();
     }
@@ -235,6 +315,32 @@
     function handleKeyPress(e) {
         if (e.key === "Enter") sendMessage();
     }
+
+    // ---- Invites panel ----
+    function toggleInvitesPanel() {
+        const panel = document.getElementById("invitesPanel");
+        panel.style.display = panel.style.display === "none" ? "flex" : "none";
+    }
+
+    // ---- Private room modal ----
+    function openModal() {
+        document.getElementById("privateRoomModal").style.display = "flex";
+        document.getElementById("prRoomName").focus();
+    }
+
+    function closeModal() {
+        document.getElementById("privateRoomModal").style.display = "none";
+    }
+
+    // Close modal on overlay click
+    document.getElementById("privateRoomModal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("privateRoomModal")) closeModal();
+    });
+
+    // Close modal with Escape
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+    });
 </script>
 
 </body>
